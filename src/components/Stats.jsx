@@ -1,6 +1,7 @@
 import React from 'react';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useStore } from '../store';
+import { formatCurrency } from '../utils/currency';
 
 export default function Stats() {
   const expenses = useStore((state) => state.expenses);
@@ -51,11 +52,11 @@ export default function Stats() {
       <div className="stats-grid">
         <div className="stat-card">
           <div className="stat-label">Total Expenses</div>
-          <div className="stat-value">${totalExpense.toFixed(2)}</div>
+          <div className="stat-value">{formatCurrency(totalExpense)}</div>
         </div>
         <div className="stat-card">
           <div className="stat-label">Average Per Person</div>
-          <div className="stat-value">${averagePerPerson.toFixed(2)}</div>
+          <div className="stat-value">{formatCurrency(averagePerPerson)}</div>
         </div>
         <div className="stat-card">
           <div className="stat-label">Total Transactions</div>
@@ -76,7 +77,7 @@ export default function Stats() {
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" />
                 <XAxis dataKey="name" />
                 <YAxis />
-                <Tooltip formatter={(value) => `$${value.toFixed(2)}`} />
+                <Tooltip formatter={(value) => formatCurrency(value)} />
                 <Bar dataKey="amount" fill="#8884d8" radius={[8, 8, 0, 0]}>
                   {spendingData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.fill} />
@@ -97,7 +98,7 @@ export default function Stats() {
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={({ name, amount }) => `${name}: $${amount.toFixed(2)}`}
+                  label={({ name, amount }) => `${name}: ${formatCurrency(amount)}`}
                   outerRadius={100}
                   fill="#8884d8"
                   dataKey="amount"
@@ -106,7 +107,7 @@ export default function Stats() {
                     <Cell key={`cell-${index}`} fill={entry.fill} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(value) => `$${value.toFixed(2)}`} />
+                <Tooltip formatter={(value) => formatCurrency(value)} />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -120,7 +121,7 @@ export default function Stats() {
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" />
                 <XAxis dataKey="name" />
                 <YAxis />
-                <Tooltip formatter={(value) => `$${value.toFixed(2)}`} />
+                <Tooltip formatter={(value) => formatCurrency(value)} />
                 <Bar dataKey="balance" fill="#82ca9d" radius={[8, 8, 0, 0]}>
                   {balanceData.map((entry, index) => (
                     <Cell

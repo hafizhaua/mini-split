@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useStore } from '../store';
+import { formatCurrency } from '../utils/currency';
 
 export default function Settlement() {
   const [mode, setMode] = useState('optimized');
@@ -105,9 +106,59 @@ export default function Settlement() {
       .sort((a, b) => b.balance - a.balance);
   };
 
+  const handleShareSummary = async () => {
+    const lines = [];
+    lines.push(`Settle Up Summary (${mode === 'optimized' ? 'Optimized' : 'Pairwise'})`);
+    lines.push(`Members: ${members.length}`);
+    lines.push(`Expenses: ${expenses.length}`);
+    lines.push('');
+    lines.push('Settlements:');
+
+    if (settlements.length === 0) {
+      lines.push('- Everything is settled');
+    } else {
+      settlements.forEach((s) => {
+        lines.push(`- ${getMemberName(s.from)} -> ${getMemberName(s.to)}: ${formatCurrency(s.amount)}`);
+      });
+    }
+
+    lines.push('');
+    lines.push('Balances:');
+    getLedgerEntries().forEach(({ memberId, balance }) => {
+      const label = balance > 0 ? 'is owed' : balance < 0 ? 'owes' : 'settled';
+      lines.push(`- ${getMemberName(memberId)} ${label} ${formatCurrency(Math.abs(balance))}`);
+    });
+
+    const message = lines.join('\n');
+
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: 'Settle Up Summary',
+          text: message,
+        });
+      } else if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(message);
+        alert('Summary copied to clipboard.');
+      } else {
+        alert(message);
+      }
+    } catch (error) {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(message);
+        alert('Share canceled. Summary copied to clipboard instead.');
+      }
+    }
+  };
+
   return (
     <div className="settlement-container">
-      <h3 className="settlement-title">Settlement Plan</h3>
+      <div className="settlement-head">
+        <h3 className="settlement-title">Settlement Plan</h3>
+        <button type="button" className="btn btn-secondary share-btn" onClick={handleShareSummary}>
+          Share Summary
+        </button>
+      </div>
 
       <div className="settlement-mode-toggle">
         <button
@@ -150,7 +201,7 @@ export default function Settlement() {
 
                 <div className="arrow">
                   <span className="arrow-text">pays</span>
-                  <span className="amount">${settlement.amount.toFixed(2)}</span>
+                  <span className="amount">{formatCurrency(settlement.amount)}</span>
                 </div>
 
                 <div className="person person-to" style={{ borderColor: getMemberColor(settlement.to) }}>
@@ -191,10 +242,10 @@ export default function Settlement() {
                         {getMemberName(row.memberId)}
                       </span>
                     </td>
-                    <td>${row.totalPaid.toFixed(2)}</td>
-                    <td>${row.totalShare.toFixed(2)}</td>
+                    <td>{formatCurrency(row.totalPaid)}</td>
+                    <td>{formatCurrency(row.totalShare)}</td>
                     <td className={row.net >= 0 ? 'table-positive' : 'table-negative'}>
-                      {row.net >= 0 ? '+' : '-'}${Math.abs(row.net).toFixed(2)}
+                      {row.net >= 0 ? '+' : '-'}{formatCurrency(Math.abs(row.net))}
                     </td>
                   </tr>
                 ))}
@@ -219,15 +270,15 @@ export default function Settlement() {
                       {getMemberName(row.personA)} {'<->'} {getMemberName(row.personB)}
                     </td>
                     <td>
-                      {getMemberName(row.personA)} {'->'} {getMemberName(row.personB)}: ${row.aToB.toFixed(2)}
+                      {getMemberName(row.personA)} {'->'} {getMemberName(row.personB)}: {formatCurrency(row.aToB)}
                     </td>
                     <td>
-                      {getMemberName(row.personB)} {'->'} {getMemberName(row.personA)}: ${row.bToA.toFixed(2)}
+                      {getMemberName(row.personB)} {'->'} {getMemberName(row.personA)}: {formatCurrency(row.bToA)}
                     </td>
                     <td>
                       {row.netAmount < 0.005
                         ? 'Settled'
-                        : `${getMemberName(row.netFrom)} -> ${getMemberName(row.netTo)}: $${row.netAmount.toFixed(2)}`}
+                        : `${getMemberName(row.netFrom)} -> ${getMemberName(row.netTo)}: ${formatCurrency(row.netAmount)}`}
                     </td>
                   </tr>
                 ))}
@@ -250,7 +301,7 @@ export default function Settlement() {
               </div>
               <div className={`ledger-balance ${balance > 0 ? 'positive' : balance < 0 ? 'negative' : ''}`}>
                 {balance > 0 ? '→' : balance < 0 ? '←' : '='}
-                <span>${Math.abs(balance).toFixed(2)}</span>
+                <span>{formatCurrency(Math.abs(balance))}</span>
               </div>
             </div>
           ))}

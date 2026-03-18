@@ -1,5 +1,6 @@
 import React from 'react';
 import { useStore } from '../store';
+import { formatCurrency } from '../utils/currency';
 
 export default function ExpenseList() {
   const expenses = useStore((state) => state.expenses);
@@ -40,7 +41,7 @@ export default function ExpenseList() {
                 <div className="paid-by" style={{ borderLeftColor: getMemberColor(expense.paidBy) }}>
                   <span className="label">Paid by</span>
                   <strong>{getMemberName(expense.paidBy)}</strong>
-                  <span className="amount">${expense.amount.toFixed(2)}</span>
+                  <span className="amount">{formatCurrency(expense.amount)}</span>
                 </div>
 
                 <div className="splits-breakdown">
@@ -53,7 +54,7 @@ export default function ExpenseList() {
                         </div>
                         <div className="split-info">
                           <span className="split-name">{getMemberName(memberId)}</span>
-                          <span className="split-amount">${amount.toFixed(2)}</span>
+                          <span className="split-amount">{formatCurrency(amount)}</span>
                         </div>
                       </div>
                     ))}

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useStore } from '../store';
+import { formatCurrency } from '../utils/currency';
 
 export default function AddExpense({ onExpenseAdded }) {
   const [description, setDescription] = useState('');
@@ -69,7 +70,7 @@ export default function AddExpense({ onExpenseAdded }) {
     } else {
       const total = Object.values(customSplits).reduce((a, b) => a + parseFloat(b || 0), 0);
       if (Math.abs(total - parseFloat(amount)) > 0.01) {
-        alert(`Splits must equal $${amount}. Current: $${total.toFixed(2)}`);
+        alert(`Splits must equal ${formatCurrency(amount)}. Current: ${formatCurrency(total)}`);
         return;
       }
       members.forEach((m) => {
@@ -104,12 +105,12 @@ export default function AddExpense({ onExpenseAdded }) {
 
       <div className="form-row">
         <div className="form-group">
-          <label>Amount</label>
+          <label>Amount (IDR)</label>
           <input
             type="number"
             value={amount}
             onChange={handleAmountChange}
-            placeholder="0.00"
+            placeholder="0"
             step="0.01"
             min="0"
             required
@@ -161,7 +162,7 @@ export default function AddExpense({ onExpenseAdded }) {
                 type="number"
                 value={customSplits[member.id] || ''}
                 onChange={(e) => handleCustomSplitChange(member.id, e.target.value)}
-                placeholder="0.00"
+                placeholder="0"
                 step="0.01"
                 min="0"
               />
