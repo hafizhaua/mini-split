@@ -115,8 +115,7 @@ export default function Settlement() {
     lines.push(`Settle Up Summary (${mode === 'optimized' ? 'Optimized' : 'Pairwise'})`);
     lines.push(`Members: ${members.length}`);
     lines.push(`Expenses: ${expenses.length}`);
-    lines.push('Open this link to auto-load the data:');
-    lines.push(shareUrl);
+    
     lines.push('');
     lines.push('Settlements:');
 
@@ -134,6 +133,9 @@ export default function Settlement() {
       const label = balance > 0 ? 'is owed' : balance < 0 ? 'owes' : 'settled';
       lines.push(`- ${getMemberName(memberId)} ${label} ${formatCurrency(Math.abs(balance))}`);
     });
+
+    lines.push('Open this link to auto-load the data:');
+    lines.push(shareUrl);
 
     const message = lines.join('\n');
 
