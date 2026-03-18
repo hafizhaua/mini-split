@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useStore } from '../store';
 
 export default function Settlement() {
@@ -7,12 +7,97 @@ export default function Settlement() {
   const getPairSettlements = useStore((state) => state.getPairSettlements);
   const getBalances = useStore((state) => state.getBalances);
   const members = useStore((state) => state.members);
+  const expenses = useStore((state) => state.expenses);
 
   const settlements = mode === 'pairwise' ? getPairSettlements() : getSettlements();
   const balances = getBalances();
 
   const getMemberName = (id) => members.find(m => m.id === id)?.name || 'Unknown';
   const getMemberColor = (id) => members.find(m => m.id === id)?.color || '#999';
+
+  const optimizedBreakdown = useMemo(() => {
+    const paid = {};
+    const share = {};
+
+    members.forEach((m) => {
+      paid[m.id] = 0;
+      share[m.id] = 0;
+    });
+
+    expenses.forEach((expense) => {
+      const payer = expense.paidBy;
+      paid[payer] = (paid[payer] || 0) + (Number(expense.amount) || 0);
+
+      Object.entries(expense.splits || {}).forEach(([memberId, rawAmount]) => {
+        share[memberId] = (share[memberId] || 0) + (Number(rawAmount) || 0);
+      });
+    });
+
+    return members.map((m) => {
+      const totalPaid = paid[m.id] || 0;
+      const totalShare = share[m.id] || 0;
+      return {
+        memberId: m.id,
+        totalPaid,
+        totalShare,
+        net: totalPaid - totalShare,
+      };
+    });
+  }, [expenses, members]);
+
+  const pairwiseBreakdown = useMemo(() => {
+    const rawPairDebts = {};
+
+    expenses.forEach((expense) => {
+      const paidBy = expense.paidBy;
+      Object.entries(expense.splits || {}).forEach(([memberId, rawAmount]) => {
+        const amount = Number(rawAmount) || 0;
+        if (memberId === paidBy || amount <= 0) {
+          return;
+        }
+
+        if (!rawPairDebts[memberId]) {
+          rawPairDebts[memberId] = {};
+        }
+        rawPairDebts[memberId][paidBy] = (rawPairDebts[memberId][paidBy] || 0) + amount;
+      });
+    });
+
+    const people = Array.from(
+      new Set([
+        ...Object.keys(rawPairDebts),
+        ...Object.values(rawPairDebts).flatMap((toMap) => Object.keys(toMap)),
+      ])
+    );
+
+    const rows = [];
+
+    for (let i = 0; i < people.length; i++) {
+      for (let j = i + 1; j < people.length; j++) {
+        const a = people[i];
+        const b = people[j];
+        const aToB = rawPairDebts[a]?.[b] || 0;
+        const bToA = rawPairDebts[b]?.[a] || 0;
+        const net = aToB - bToA;
+
+        if (Math.abs(aToB) < 0.005 && Math.abs(bToA) < 0.005) {
+          continue;
+        }
+
+        rows.push({
+          personA: a,
+          personB: b,
+          aToB,
+          bToA,
+          netFrom: net > 0 ? a : b,
+          netTo: net > 0 ? b : a,
+          netAmount: Math.abs(net),
+        });
+      }
+    }
+
+    return rows;
+  }, [expenses]);
 
   const getLedgerEntries = () => {
     return Object.entries(balances)
@@ -79,6 +164,78 @@ export default function Settlement() {
           ))}
         </div>
       )}
+
+      <div className="calc-breakdown">
+        <h4 className="ledger-title">Calculation Breakdown</h4>
+
+        {mode === 'optimized' ? (
+          <div className="table-wrap">
+            <table className="calc-table">
+              <thead>
+                <tr>
+                  <th>Member</th>
+                  <th>Total Paid</th>
+                  <th>Total Share</th>
+                  <th>Net (Paid - Share)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {optimizedBreakdown.map((row) => (
+                  <tr key={row.memberId}>
+                    <td>
+                      <span className="table-member">
+                        <span
+                          className="table-dot"
+                          style={{ backgroundColor: getMemberColor(row.memberId) }}
+                        />
+                        {getMemberName(row.memberId)}
+                      </span>
+                    </td>
+                    <td>${row.totalPaid.toFixed(2)}</td>
+                    <td>${row.totalShare.toFixed(2)}</td>
+                    <td className={row.net >= 0 ? 'table-positive' : 'table-negative'}>
+                      {row.net >= 0 ? '+' : '-'}${Math.abs(row.net).toFixed(2)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="table-wrap">
+            <table className="calc-table">
+              <thead>
+                <tr>
+                  <th>Pair</th>
+                  <th>{'A -> B (Raw)'}</th>
+                  <th>{'B -> A (Raw)'}</th>
+                  <th>Net Settlement</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pairwiseBreakdown.map((row) => (
+                  <tr key={`${row.personA}-${row.personB}`}>
+                    <td>
+                      {getMemberName(row.personA)} {'<->'} {getMemberName(row.personB)}
+                    </td>
+                    <td>
+                      {getMemberName(row.personA)} {'->'} {getMemberName(row.personB)}: ${row.aToB.toFixed(2)}
+                    </td>
+                    <td>
+                      {getMemberName(row.personB)} {'->'} {getMemberName(row.personA)}: ${row.bToA.toFixed(2)}
+                    </td>
+                    <td>
+                      {row.netAmount < 0.005
+                        ? 'Settled'
+                        : `${getMemberName(row.netFrom)} -> ${getMemberName(row.netTo)}: $${row.netAmount.toFixed(2)}`}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
 
       <div className="ledger">
         <h4 className="ledger-title">Account Ledger</h4>

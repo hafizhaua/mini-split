@@ -772,6 +772,64 @@ body {
   padding-top: 24px;
 }
 
+.calc-breakdown {
+  margin-bottom: 28px;
+  padding: 18px;
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(245, 243, 255, 0.8), rgba(245, 243, 255, 0.35));
+  border: 1px solid var(--border);
+}
+
+.table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.calc-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 680px;
+}
+
+.calc-table th,
+.calc-table td {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.92rem;
+}
+
+.calc-table th {
+  color: var(--text-light);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  font-size: 0.78rem;
+}
+
+.table-member {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+
+.table-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.table-positive {
+  color: var(--success);
+  font-weight: 600;
+}
+
+.table-negative {
+  color: var(--accent);
+  font-weight: 600;
+}
+
 .ledger-title {
   font-size: 1.1rem;
   font-weight: 600;
@@ -1045,6 +1103,10 @@ body {
 
   .app-main {
     padding: 20px;
+  }
+
+  .calc-breakdown {
+    padding: 12px;
   }
 
   @media (max-width: 480px) {
