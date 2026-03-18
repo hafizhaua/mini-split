@@ -5,12 +5,42 @@ import ExpenseList from './components/ExpenseList';
 import Settlement from './components/Settlement';
 import Stats from './components/Stats';
 import { useStore } from './store';
+import { parseShareToken } from './utils/shareData';
 import './App.css';
 
 function App() {
   const [started, setStarted] = useState(false);
   const [activeTab, setActiveTab] = useState('expenses');
   const members = useStore((state) => state.members);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('share');
+
+    if (!token) {
+      return;
+    }
+
+    const shared = parseShareToken(token);
+    if (!shared) {
+      return;
+    }
+
+    useStore.setState({
+      members: shared.members,
+      expenses: shared.expenses,
+    });
+
+    setStarted(shared.members.length >= 2);
+    setActiveTab('settlement');
+
+    params.delete('share');
+    const nextQuery = params.toString();
+    const nextUrl = nextQuery
+      ? `${window.location.pathname}?${nextQuery}`
+      : window.location.pathname;
+    window.history.replaceState({}, '', nextUrl);
+  }, []);
 
   if (!started) {
     return <Setup onStart={() => setStarted(true)} />;

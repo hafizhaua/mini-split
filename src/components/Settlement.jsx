@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useStore } from '../store';
 import { formatCurrency } from '../utils/currency';
+import { buildShareToken } from '../utils/shareData';
 
 export default function Settlement() {
   const [mode, setMode] = useState('optimized');
@@ -107,10 +108,15 @@ export default function Settlement() {
   };
 
   const handleShareSummary = async () => {
+    const shareToken = buildShareToken({ members, expenses });
+    const shareUrl = `${window.location.origin}${window.location.pathname}?share=${encodeURIComponent(shareToken)}`;
+
     const lines = [];
     lines.push(`Settle Up Summary (${mode === 'optimized' ? 'Optimized' : 'Pairwise'})`);
     lines.push(`Members: ${members.length}`);
     lines.push(`Expenses: ${expenses.length}`);
+    lines.push('Open this link to auto-load the data:');
+    lines.push(shareUrl);
     lines.push('');
     lines.push('Settlements:');
 
@@ -134,19 +140,20 @@ export default function Settlement() {
     try {
       if (navigator.share) {
         await navigator.share({
-          title: 'Settle Up Summary',
+          title: 'Settle Up Shared Group',
           text: message,
+          url: shareUrl,
         });
       } else if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(message);
-        alert('Summary copied to clipboard.');
+        alert('Share link and summary copied to clipboard.');
       } else {
         alert(message);
       }
     } catch (error) {
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(message);
-        alert('Share canceled. Summary copied to clipboard instead.');
+        alert('Share canceled. Link and summary copied to clipboard instead.');
       }
     }
   };
@@ -156,7 +163,7 @@ export default function Settlement() {
       <div className="settlement-head">
         <h3 className="settlement-title">Settlement Plan</h3>
         <button type="button" className="btn btn-secondary share-btn" onClick={handleShareSummary}>
-          Share Summary
+          Share Link
         </button>
       </div>
 
